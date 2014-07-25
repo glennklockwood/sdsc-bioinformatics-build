@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+source config-env.sh
+
+if [ -z "$BUILD" ]; then
+  BUILD=1
+fi
+if [ -z "$INSTALL" ]; then
+  INSTALL=0
+fi
+
+CC=icc
+CXX=icpc
+FC=ifort
+CFLAGS="-g -O2 -mavx"
+CXXFLAGS="-g -O2 -mavx"
+FFLAGS="-g -O2 -mavx"
+#CFLAGS="-g -Wall -O2 -march=native" # for GCC
+
+### Unpack tarball
+tar jxvf samtools-0.1.19.tar.bz2 
+
+### Configure
+cd samtools-0.1.19
+sed -i 's#^CC=.*$#CC='"$CC"'#' Makefile
+sed -i 's#^CFLAGS=.*$#CFLAGS='"$CFLAGS"'#' Makefile
+
+### Build
+if [ "$BUILD" != "0" ]
+then
+  make razip
+  make
+else
+  exit 0
+fi
+
+### Install
+SAMTOOLS_HOME=$APPS_PREFIX/samtools-0.1.19
+if [ "$INSTALL" != "0" ]
+then
+  mkdir -p $SAMTOOLS_HOME/bin
+  mkdir -p $SAMTOOLS_HOME/lib
+  mkdir -p $SAMTOOLS_HOME/include
+  mkdir -p $SAMTOOLS_HOME/man/man1
+  find ./ ! -type d -perm +0100 -exec cp -v {} $SAMTOOLS_HOME/bin \;
+  cp -r examples $SAMTOOLS_HOME/
+  cp -a libbam* $SAMTOOLS_HOME/lib
+  cp -a *.h $SAMTOOLS_HOME/include
+  cp -v samtools.1 $SAMTOOLS_HOME/man/man1
+fi

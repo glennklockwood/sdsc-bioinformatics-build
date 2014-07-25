@@ -1,0 +1,63 @@
+# The build process for iSAAC aligner release 01.14.04.01 in Makefile format
+.PHONY: configure build install test
+
+APP=isaac-aligner
+APPDIR=isaac_aligner-iSAAC-01.14.04.01
+APP_HOME=$(APPS_PREFIX)/iSAAC-01.14.04.01
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Compiler to use for this application build
+#PATH += /home/glock/apps/gcc-4.7.3/bin:
+#LD_LIBRARY_PATH += /home/glock/apps/gcc-4.7.3/lib64:/home/glock/apps/gcc-4.7.3/lib:
+CC      = gcc
+CXX     = g++
+FC      = gfortran
+CFLAGS  = -O2 -mavx
+CXXFLAGS= -O2 -mavx
+FFLAGS  = -O2 -mavx
+
+### Build rules ################################################################
+all: configure build
+
+### Download the source tarball
+iSAAC-01.14.04.01.tar.gz:
+	wget "https://github.com/sequencing/isaac_aligner/archive/iSAAC-01.14.04.01.tar.gz"
+	mv iSAAC-01.14.04.01 $@
+
+### Unpack the source tarball
+$(APPDIR): iSAAC-01.14.04.01.tar.gz
+	tar zxvf $<
+
+### Configure the source for build
+configure: $(APPDIR)
+	cd $(APPDIR) && \
+	mkdir build && \
+	cd build && \
+	CC="$(CC)" CXX="$(CXX)" FC="$(FC)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" FFLAGS="$(FFLAGS)" \
+	../src/configure --prefix=$(APP_HOME)
+
+### Build the actual software distribution
+build: $(APPDIR)
+	cd $(APPDIR) && make
+
+### Install the package into the correct location
+install: $(APPDIR)
+	cd $(APPDIR) && make install
+
+### Validate the installation
+test: $(APP_HOME)/bin/demo/run_demo.bash
+#	$(APP_HOME)/bin/demo/run_demo.bash
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR)

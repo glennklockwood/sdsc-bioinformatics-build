@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# This release of iSAAC (01.14.02.18) requires GCC 4.7 (<4.6 and >=4.8 will not work)
+#
+# 1. mkdir build
+# 2. cd build
+# 3. CC=gcc CXX=g++ FC=gfortran CFLAGS='-O3 -march=native' CXXFLAGS='-O3 -march=native' FFLAGS='-O3 -march=native' ../src/configure --prefix=/apps/gordon/iSAAC-01.14.02.18
+
+module purge
+module load gnu/4.7.3
+
+source config-env.sh
+
+tar xf iSAAC-01.14.02.18.tar.gz
+cd isaac_aligner-iSAAC-01.14.02.18
+mkdir build
+cd build
+CC=gcc CXX=g++ FC=gfortran \
+  CFLAGS='-O2 -mavx' \
+  CXXFLAGS='-O2 -mavx' \
+  FFLAGS='-O2 -mavx' ../src/configure --prefix=$APPS_PREFIX/iSAAC-01.14.02.18
+make
+make install

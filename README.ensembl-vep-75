@@ -1,0 +1,61 @@
+#!/bin/bash
+
+. ./config-env.sh
+
+### This is a Perl library that requires a couple of non-core Perl libraries to 
+### even install.  So, install local::lib as our base of operations
+mkdir -p $APPS_PREFIX/ensembl-75/lib/perl5
+tar zxvf local-lib-2.000011.tar.gz 
+cd local-lib-2.000011
+perl Makefile.PL --bootstrap=$APPS_PREFIX/ensembl-75
+make test
+make install
+
+### You need to take the output of the following command and paste it into your 
+### environment to switch over to your new perl local::lib path
+perl -I $APPS_PREFIX/ensembl-75/lib/perl5/ -Mlocal::lib=$APPS_PREFIX/ensembl-75
+
+### Wipe out the effects of any other local::libs that may be loaded
+export PERL5LIB="$APPS_PREFIX/ensembl-75/lib/perl5"
+
+### These are required for the stupid Install.pl script
+yes | perl -MCPAN -e 'install(Archive::Extract)'
+yes | perl -MCPAN -e 'install(Crypt::SSLeay)'
+yes | perl -MCPAN -e 'install(Archive::Zip)'
+cd ..
+
+### Load our new local::lib
+FIFO=$(mktemp -u)
+mkfifo $FIFO
+perl -I $APPS_PREFIX/ensembl-75/lib/perl5/ -Mlocal::lib=$APPS_PREFIX/ensembl-75 > $FIFO &
+source $FIFO
+rm $FIFO
+
+### Run the installer.
+if [ ! -d $PWD/ensembl-tools-release-75/scripts/variant_effect_predictor ]
+then
+  unzip ensembl-tools-release-75.zip
+fi
+cd ensembl-tools-release-75/scripts/variant_effect_predictor/
+./INSTALL.pl || exit 1
+cd ../..
+
+### Install it into our local::lib
+mv scripts/variant_effect_predictor/Bio $APPS_PREFIX/ensembl-75/lib/perl5/
+
+### Copy over the entire package contents because examples and READMEs are 
+### haphazardly stuffed everywhere
+mkdir -p $APPS_PREFIX/ensembl-75/libexec
+cd scripts
+ls -l
+cp -rv assembly_converter id_history_converter region_reporter variant_effect_predictor $APPS_PREFIX/ensembl-75/libexec
+cd $APPS_PREFIX/ensembl-75/bin
+
+### Symlink the executables we just copied over
+ln -s ../libexec/assembly_converter/AssemblyMapper.pl 
+ln -s ../libexec/id_history_converter/IDmapper.pl 
+ln -s ../libexec/region_reporter/region_report.pl 
+ln -s ../libexec/variant_effect_predictor/convert_cache.pl 
+ln -s ../libexec/variant_effect_predictor/filter_vep.pl 
+ln -s ../libexec/variant_effect_predictor/gtf2vep.pl 
+ln -s ../libexec/variant_effect_predictor/variant_effect_predictor.pl 

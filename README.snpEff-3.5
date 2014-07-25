@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+APP=snpEff
+APPDIR=snpEff-3.5
+
+. config-env.sh
+
+unzip snpEff_v3_5_core.zip
+cd snpEff
+ln -sv scripts bin
+
+sed -i 's#^data_dir = .*#data_dir = '"$APPS_PREFIX/$APPDIR/data"'#' snpEff.config
+mkdir -p $APPS_PREFIX/$APPDIR/data
+chmod 0770 $APPS_PREFIX/$APPDIR/data
+sed -i 's/Xmx4g/Xmx2g/g' scripts/snpEff
+
+cd scripts
+ln -sv ../snpEff.config
+ln -sv ../snpEff.jar
+ln -sv ../SnpSift.jar
+
+cd ../..
+mv -v snpEff/* $APPS_PREFIX/$APPDIR

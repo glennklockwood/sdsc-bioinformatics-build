@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+. config-env.sh
+
+TARBALL=$PWD/SVMerge-1.2r37.tar.gz
+
+mkdir -p $APPS_PREFIX/svmerge-1.2r37
+cd $APPS_PREFIX/svmerge-1.2r37
+
+tar zxvf $TARBALL

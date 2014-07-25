@@ -1,0 +1,37 @@
+# The build process for Illumina's Isis software version 2.5.26
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### hack to prevent this from hosing existing Illumina install root
+APPS_PREFIX=/apps/test
+RPM_DB=$(APPS_PREFIX)/.rpm
+
+### Build rules ################################################################
+all: install
+
+$(RPM_DB):
+	cp -r /var/lib/rpm $(RPM_DB)
+
+### Install the package into the correct location
+install:
+	rpm -ivh --dbpath $(RPM_DB) --relocate /opt=$(APPS_PREFIX) ./Isis-2.5.26.13-1.x86_64.rpm 
+	rpm -ivh --nodeps --dbpath $(RPM_DB) --relocate /opt/illumina=$(APPS_PREFIX)/illumina ./TUNE-1.2.14.Isis.2.5.26.13-1.x86_64.rpm 
+
+### Validate the installation
+test: 
+	@echo "This makefile does not include any prepared tests."
+
+### Remove the unpacked source tarball after installation
+clean:
+	@echo "You should remove the RPMs by hand given RPM db

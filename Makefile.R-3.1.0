@@ -1,0 +1,62 @@
+# The build process for R version 3.1.0
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+APP=R
+APPDIR=R-3.1.0
+APP_HOME=$(APPS_PREFIX)/$(APPDIR)
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Build rules ################################################################
+all: configure build
+
+### Download the source tarball
+R-3.1.0.tar.gz:
+	wget http://cran.cnr.berkeley.edu/src/base/R-3/R-3.1.0.tar.gz
+
+### Unpack the source tarball
+$(APPDIR): R-3.1.0.tar.gz
+	tar zxvf R-3.1.0.tar.gz
+
+### Configure the source for build
+configure: $(APPDIR)
+	cd $(APPDIR) && \
+		AR=xiar \
+		CC=icc \
+		FC=ifort F77=ifort \
+		CXX=icpc \
+		CFLAGS="-mkl -ipo" \
+		FFLAGS="-mkl -ipo" \
+		CXXFLAGS="-mkl -ipo" \
+		LDFLAGS="-mkl" \
+		./configure \
+		--prefix=$(APPS_PREFIX)/$(APPDIR) \
+		--enable-R-shlib \
+		--with-blas \
+		--with-lapack
+
+### Build the actual software distribution
+build: $(APPDIR)/config.log
+	cd $(APPDIR) && _JAVA_OPTIONS=-Xmx1g make
+
+### Install the package into the correct location
+install:
+	cd $(APPDIR) && _JAVA_OPTIONS=-Xmx1g make install
+
+### Validate the installation
+test: 
+	@echo "This makefile does not include any prepared tests."
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR)

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+. config-env.sh
+
+APP=tabix-0.2.6
+CC=icc
+CFLAGS="-O2 -xAVX -fPIC"
+
+tar jxvf tabix-0.2.6.tar.bz2
+cd tabix-0.2.6
+
+sed -i 's/^CC *=.*/CC = '"$CC"'/' Makefile
+sed -i 's/^CFLAGS *=.*/CFLAGS = '"$CFLAGS"'/' Makefile
+
+make
+
+mkdir -p $APPS_PREFIX/$APP/bin
+mkdir -p $APPS_PREFIX/$APP/lib
+mkdir -p $APPS_PREFIX/$APP/include
+find ./ -maxdepth 1 ! -type d -perm +0100 -exec mv -v {} $APPS_PREFIX/$APP/bin \;
+mv -v *.h $APPS_PREFIX/$APP/include
+mv -v *.a *.so $APPS_PREFIX/$APP/lib
+
+mkdir -p $APPS_PREFIX/$APP/man/man1
+mv -v tabix.1 $APPS_PREFIX/$APP/man/man1
+ 

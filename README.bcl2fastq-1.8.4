@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+source config-env.sh
+
+if [ ! -d bcl2fastq ]; then
+  tar jxvf bcl2fastq-1.8.4.tar.bz2
+fi
+cd bcl2fastq
+mkdir build
+cd build
+module purge
+module load cmake
+../src/configure --prefix=$APPS_PREFIX/bcl2fastq-1.8.4
+make
+make install

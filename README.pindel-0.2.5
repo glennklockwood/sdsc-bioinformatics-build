@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+APP=pindel
+APPDIR=pindel-0.2.5
+
+source config-env.sh
+
+CC=icc
+CXX=icpc
+FC=ifort
+CFLAGS="-O3 -xAVX"
+CXXFLAGS="-O3 -xAVX"
+FFLAGS="-O3 -xAVX"
+
+### Unpack tarball
+if [ "$UNPACK" != "0" ]; then
+  tar zxvf pindel-0.2.5.tar.gz
+fi
+
+### Configure
+module load samtools
+cd $APPDIR/src || exit 1
+mv -v Makefile Makefile.dist
+cp -v ../../Makefile.pindel-0.2.5 ./Makefile
+
+### Build
+if [ "$BUILD" != "0" ]
+then
+  make SAMTOOLS=$SAMTOOLS_HOME -j16
+else
+  exit 0
+fi
+
+### Install
+APP_HOME=$APPS_PREFIX/$APPDIR
+if [ "$INSTALL" != "0" ]
+then
+  mkdir -p $APP_HOME/bin
+  cp -v pindel $APP_HOME/bin
+  cp -r ../demo $APP_HOME/
+  cp -r ../test $APP_HOME/
+fi
+
+### Validate with
+# cd $PINDEL_HOME/test
+# make
+### However I can't get this version (0.2.5) to actually validate...

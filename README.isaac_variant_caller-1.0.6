@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+module purge
+module load gnu/4.7.3
+
+source config-env.sh
+
+tar xf isaac_variant_caller-1.0.6.tar.gz
+cd isaac_variant_caller-1.0.6
+CC=gcc CXX=g++ FC=gfortran \
+  CFLAGS='-O2 -mavx' \
+  CXXFLAGS='-O2 -mavx' \
+  FFLAGS='-O2 -mavx' ./configure --prefix=$APPS_PREFIX/isaac_variant_caller-1.0.6
+make
+make install

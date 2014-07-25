@@ -1,0 +1,40 @@
+# Pseudo targets for configuration
+.PHONY: all clean
+
+ifndef $(SAMTOOLS)
+  SAMTOOLS	= /apps/gordon/samtools-0.1.19
+endif
+
+### GCC
+CXX			= g++
+CXXFLAGS	= -O3 -fopenmp -I$(SAMTOOLS)/include
+DEBUG_FLAGS	= -g -O0 -fprofile-arcs -ftest-coverage -I$(SAMTOOLS)/include
+LDFLAGS		= -lm -lz -L$(SAMTOOLS)/lib -lbam
+CPPFLAGS=-I$(SAMTOOLS)/include
+
+### Intel
+CXX			= icpc
+CXXFLAGS	= -O3 -openmp -xAVX -I$(SAMTOOLS)/include
+DEBUG_FLAGS	= -g -O0 -I$(SAMTOOLS)/include
+LDFLAGS		= -lm -lz -L$(SAMTOOLS)/lib -lbam
+
+SOURCES=pindel.cpp reader.cpp reporter.cpp searcher.cpp parameter.cpp \
+    refreader.cpp control_state.cpp search_deletions_nt.cpp \
+    search_inversions.cpp search_inversions_nt.cpp bam2depth.cpp\
+    search_tandem_duplications.cpp search_tandem_duplications_nt.cpp \
+    output_sorter.cpp farend_searcher.cpp search_variant.cpp \
+    searchshortinsertions.cpp searchdeletions.cpp output_file_data.cpp \
+    bddata.cpp shifted_vector.cpp read_buffer.cpp \
+    line_reader.cpp ifstream_line_reader.cpp gz_line_reader.cpp\
+    pindel_read_reader.cpp user_defined_settings.cpp \
+    fn_parameters.cpp logstream.cpp search_MEI_util.cpp \
+    search_MEI.cpp assembly.cpp genotyping.cpp
+
+ 
+all:	pindel
+
+pindel:	$(SOURCES:.cpp=.o)
+	$(CXX) $^ $(CXXFLAGS) $(LDFLAGS) -o $@
+
+clean:
+	-$(RM) pindel *.gcov *.gcda *.gcno gmon.out *.d *.o

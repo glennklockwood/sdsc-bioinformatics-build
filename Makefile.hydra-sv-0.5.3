@@ -1,0 +1,63 @@
+# The build process for Hydra-SV 0.5.3 in Makefile format
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+APP=Hydra-SV
+APPDIR=hydra-sv-0.5.3
+APP_HOME=$(APPS_PREFIX)/$(APPDIR)
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Compiler to use for this application build
+CC      = icc
+CXX     = icpc
+CFLAGS  = -O2 -xAVX
+CXXFLAGS= -O2 -xAVX
+
+### Build rules ################################################################
+all: configure build
+
+### Download the source tarball
+Hydra.v0.5.3.tar.gz:
+	wget https://hydra-sv.googlecode.com/files/Hydra.v0.5.3.tar.gz
+
+### Unpack the source tarball
+$(APPDIR): Hydra.v0.5.3.tar.gz
+	tar zxvf $<
+	mv -T Hydra-Version-0.5.3 $@
+
+### Configure the source for build
+configure: $(APPDIR)
+	find $(APPDIR) -name Makefile | xargs sed -i 's#^ *CC *=.*#CC='"$(CC)"'#'
+	find $(APPDIR) -name Makefile | xargs sed -i 's#^ *CXX *=.*#CXX='"$(CXX)"'#'
+	find $(APPDIR) -name Makefile | xargs sed -i 's#^ *CXXFLAGS *=.*#CXXFLAGS='"$(CXXFLAGS)"'#'
+	find $(APPDIR) -name Makefile | xargs sed -i 's#^ *CFLAGS *=.*#CFLAGS='"$(CFLAGS)"'#'
+
+### Build the actual software distribution
+build $(APPDIR)/bin: configure
+	cd $(APPDIR) && \
+	make CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" clean && \
+	make CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" all
+
+### Install the package into the correct location
+install: $(APPDIR)/bin
+	mkdir -p $(APP_HOME)
+	cp -rv $(APPDIR)/bin $(APP_HOME)/
+	cp -rv $(APPDIR)/scripts $(APP_HOME)/
+	cd $(APP_HOME)/bin && for file in ../scripts/*;do ln -vs $$file;done
+
+### Validate the installation
+test: 
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR)

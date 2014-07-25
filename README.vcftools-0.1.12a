@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+. config-env.sh
+
+APP=vcftools-0.1.12a
+CC=icc
+CXX=icpc
+CFLAGS="-O2 -xAVX"
+CXXFLAGS="-O2 -xAVX -D_FILE_OFFSET_BITS=64"
+
+tar zxvf vcftools_0.1.12a.tar.gz
+cd vcftools_0.1.12a
+
+sed -i 's/CPP/CXX/g'                                cpp/Makefile
+sed -i 's/^CXX *=.*/CXX = '"$CXX"'/'                cpp/Makefile
+sed -i 's/^CC *=.*/CC = '"$CC"'/'                   cpp/Makefile
+sed -i 's/^CFLAGS *=.*/CFLAGS = '"$CFLAGS"'/'       cpp/Makefile
+sed -i 's/^CXXFLAGS *=.*/CXXFLAGS = '"$CXXFLAGS"'/' cpp/Makefile
+
+make PREFIX=$APPS_PREFIX/$APP
+
+mkdir -p $APPS_PREFIX/$APP/man/man1
+cp -v cpp/vcftools.1.gz $APPS_PREFIX/$APP/man/man1

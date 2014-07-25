@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+APP=breakdancer
+APPDIR=breakdancer-1.1.2
+
+source config-env.sh
+
+CC=icc
+CXX=icpc
+FC=ifort
+CFLAGS="-O3 -xAVX"
+CXXFLAGS="-O3 -xAVX"
+FFLAGS="-O3 -xAVX"
+
+### Unpack tarball
+if [ "$UNPACK" != "0" ]; then
+  unzip breakdancer-1.1.2_2013_03_08.zip
+fi
+
+### Configure
+module load samtools
+cd $APPDIR/cpp || exit 1
+### Build
+if [ "$BUILD" != "0" ]
+then
+  # From the breakdancer "Makefile" (ugh)
+  #g++ -g -Wall -O2 -I/Users/kchen3/pkg/samtools/samtools-0.1.6 BreakDancerMax.cpp AlnParser.cpp Poisson.cpp -o breakdancer-max -lm -lz -L/Users/kchen3/pkg/samtools/samtools-0.1.6 -lbam
+
+  # Build with Intel
+  set -x
+  $CXX $CFLAGS -I$SAMTOOLS_HOME/include BreakDancerMax.cpp AlnParser.cpp Poisson.cpp -o breakdancer-max -L$SAMTOOLS_HOME/lib -lbam -lm -lz -lpthread || exit 1
+  set +x
+else
+  exit 0
+fi
+
+### Install
+APP_HOME=$APPS_PREFIX/$APPDIR
+if [ "$INSTALL" != "0" ]
+then
+  mkdir -p $APP_HOME/bin
+  cp -v breakdancer-max $APP_HOME/bin
+  cp -vr ../perl/* $APP_HOME/bin
+fi
+
+### Validate with
+# 
+#  there is no validation test for breakdancer 1.1.2 :(
+# 
+### 
+
+################################################################################
+## TO GET THE PERL VERSION TO WORK
+################################################################################
+# SYSTEM=gordon
+# SYSTEM=tscc
+# wget http://search.cpan.org/CPAN/authors/id/E/ET/ETHER/local-lib-2.000011.tar.gz
+# tar zxvf local-lib-2.000011.tar.gz 
+# cd local-lib-2.000011
+# perl Makefile.PL --bootstrap=/apps/$SYSTEM/breakdancer-1.1.2/perl
+# make test
+# make install
+# perl -I/apps/$SYSTEM/breakdancer-1.1.2/perl/lib/perl5 -Mlocal::lib=/apps/$SYSTEM/breakdancer-1.1.2/perl/lib/perl5
+# cd ..
+# cd $SYSTEM/modulefiles/
+# vim breakdancer/1.1.2 
+### insert the output of the `perl -I/apps/... -Mlocal::lib=/apps/...` step in this file
+# module load breakdancer
+# perl -MCPAN -e 'install(List::MoreUtils)'
+# perl -MCPAN -e 'install(Statistics::Descriptive)'
+# perl -MCPAN -e 'install(Math::CDF)'
+# perl -MCPAN -e 'install(GD::Graph)'
+# perl -MCPAN -e 'install(GD::Graph::histogram)'
+# cd /apps/$SYSTEM/breakdancer-1.1.2/perl/lib/perl5/lib/perl5
+# ln -s ../../../../../bin/Poisson.pm 
+# ln -s ../../../../../bin/AlnParser.pm 
+# cd /apps/$SYSTEM/breakdancer-1.1.2/bin
+# vim bam2cfg.pl 
+### change the hashbang to #!/usr/bin/env perl (seriously?)
+# vim AlnParser.pm 
+### change the hashbang to #!/usr/bin/env perl (this too)
+# vim Poisson.pm 
+### change the hashbang to #!/usr/bin/env perl (this too)
+# then ln -s bam2cfg.pl bam2cfg

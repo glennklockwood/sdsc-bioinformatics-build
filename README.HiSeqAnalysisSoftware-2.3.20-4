@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+source config-env.sh
+
+cp -r /var/lib/rpm $HOME/
+#rpm -ivh --dbpath $HOME/rpm --relocate /opt=$APPS_PREFIX HiSeqAnalysisSoftware-2.3.20-4.x86_64.rpm
+rpm --dbpath $HOME/rpm -i --prefix /apps/gordon HiSeqAnalysisSoftware-2.3.20-4.x86_64.rpm
+
+### Install reference genome
+cd /apps/gordon/illumina/HiSeqAnalysisSoftware
+./unpackIsisReference.py  --input-file=/oasis/scratch/glock/temp_project/HiSeqAnalysisSoftware_UCSC_hg19.tar.gz --jobs 8

@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+APP=bwa
+APPDIR=bwa-0.7.8
+
+source config-env.sh
+
+CC=icc
+CXX=icpc
+FC=ifort
+CFLAGS="-O3 -xAVX"
+CXXFLAGS="-O3 -xAVX"
+FFLAGS="-O3 -xAVX"
+
+### Unpack tarball
+tar jxvf bwa-0.7.8.tar.bz2 || exit 1
+
+### Configure
+cd $APPDIR || exit 1
+sed -i 's#^CC=.*$#CC='"$CC"'#' Makefile
+sed -i 's#^CFLAGS=.*$#CFLAGS='"$CFLAGS"'#' Makefile
+
+### Build
+echo -en "\nShould we build $APP? (y/[n]) "
+read yesorno
+if [[ $yesorno =~ ^y ]]
+then
+  make || exit 1
+else
+  exit 0
+fi
+
+### Install
+APP_HOME=$APPS_PREFIX/$APPDIR
+echo -en "\nShould we install to ${APP_HOME}? (y/[n]) "
+read yesorno
+if [[ $yesorno =~ ^y ]]
+then
+  mkdir -p $APP_HOME/bin
+  find ./ ! -type d -perm +0100 -exec cp -v {} $APP_HOME/bin \;
+  mkdir -p $APP_HOME/man/man1
+  cp -v bwa.1 $APP_HOME/man/man1
+fi
+
+# Validate with
+# bwa mem -t 8 -M -R \
+#   '@RG\tID:ga\tSM:hs\tLB:ga\tPL:Illumina\n@RG\tID:454\tSM:hs\tLB:454\tPL:454' \
+#   /oasis/scratch/glock/temp_project/d.melanogaster/dmel-all-chromosome-r5.49.fasta.gz \
+#   /oasis/scratch/glock/temp_project/d.melanogaster/FR23_?.fq.gz > FR23.sam

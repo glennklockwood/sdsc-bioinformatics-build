@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+APP=manta
+APPDIR=manta-0.19.0
+
+#module purge
+#module load gnu/4.7.3
+
+source config-env.sh
+
+CC=gcc
+CXX=g++
+FC=gfortran
+CFLAGS="-O2 -mavx"
+CXXFLAGS="-O2 -mavx"
+FFLAGS="-O2 -mavx"
+
+### Unpack tarball
+# wget https://github.com/StructuralVariants/manta/releases/download/v0.19.0/manta-0.19.0.tar.bz2
+tar jxvf manta-0.19.0.tar.bz2 
+
+### Configure
+cd $APPDIR
+mkdir build
+cd build
+
+CC="$CC" \
+  CXX="$CXX" \
+  FC="$FC" \
+  CFLAGS="$CFLAGS" \
+  CXXFLAGS="$CXXFLAGS" \
+  FFLAGS="$FFLAGS" \
+  ../src/configure --prefix=$APPS_PREFIX/$APPDIR
+
+### Build
+echo -en "\nShould we build $APP? (y/[n]) "
+read yesorno
+if [[ $yesorno =~ ^y ]]
+then
+  make || exit 1
+else
+  exit 0
+fi
+
+### Install
+APP_HOME=$APPS_PREFIX/$APPDIR
+echo -en "\nShould we install to ${APP_HOME}? (y/[n]) "
+read yesorno
+if [[ $yesorno =~ ^y ]]
+then
+  make install
+fi
+
+# Validate with
+#  ???

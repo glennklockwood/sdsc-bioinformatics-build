@@ -1,0 +1,74 @@
+# The build process for GASV release Oct1_2013 in Makefile format
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+APP=GASV
+APPDIR=gasv-oct1_2013
+APP_HOME=$(APPS_PREFIX)/$(APPDIR)
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Compiler to use for this application build
+CC      = icc
+CXX     = icpc
+CFLAGS  = -O2 -xAVX
+CXXFLAGS= -O2 -xAVX
+
+### Build rules ################################################################
+all: configure build
+
+### Download the source tarball
+GASVRelease_Oct1_2013.tgz:
+	wget https://gasv.googlecode.com/files/GASVRelease_Oct1_2013.tgz 
+
+### Unpack the source tarball
+$(APPDIR): GASVRelease_Oct1_2013.tgz
+	tar zxvf $<
+	mv -T gasv $@
+
+### Configure the source for build
+configure:
+	@echo "Nothing to configure.  Use 'make build' to proceed."
+
+### Build the actual software distribution
+build $(APPDIR)/bin/GASV.jar: $(APPDIR)
+	cd $(APPDIR) && \
+	export _JAVA_OPTIONS=-Xmx1g; \
+	ant
+
+# Cannot use implicit rules here because "cpp" is not a valid C++ suffix :(
+# src/gasvPro/convertClusters.cpp
+$(APPDIR)/bin/GASVPro-CC: 
+	$(CXX) $(CXXFLAGS) $(APPDIR)/src/gasvPro/GASVPro-cc.cpp -o $@
+$(APPDIR)/bin/GASVPro-graph: 
+	$(CXX) $(CXXFLAGS) $(APPDIR)/src/gasvPro/GASVPro-graph.cpp -o $@
+$(APPDIR)/bin/GASVPro-mcmc: 
+	$(CXX) $(CXXFLAGS) $(APPDIR)/src/gasvPro/GASVPro-mcmc.cpp -o $@
+$(APPDIR)/bin/convertClusters: 
+	$(CXX) $(CXXFLAGS) $(APPDIR)/src/gasvPro/convertClusters.cpp -o $@
+
+### Install the package into the correct location
+install: $(APPDIR)/bin/GASV.jar $(APPDIR)/bin/GASVPro-CC $(APPDIR)/bin/GASVPro-graph $(APPDIR)/bin/GASVPro-mcmc $(APPDIR)/bin/convertClusters
+	cp -v $(APPDIR)/src/GASVPro-HQ.sh $(APPDIR)/bin/
+	cp -v $(APPDIR)/src/GASVPro.sh $(APPDIR)/bin/
+	mkdir -p $(APP_HOME)
+	cp -rv $(APPDIR)/bin $(APP_HOME)/
+	-rm -rvf $(APPDIR)/scripts/.svn
+	cp -rv $(APPDIR)/scripts $(APP_HOME)/
+
+### Validate the installation
+test: 
+	@echo "This application does not come with any tests."
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR)

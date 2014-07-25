@@ -1,0 +1,65 @@
+# The build process for Socrates (commit b42e78f724/March18,2014) in Makefile format
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+APP=Socrates
+APPDIR=socrates-18.03.2014
+APP_HOME=$(APPS_PREFIX)/$(APPDIR)
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Compiler to use for this application build
+CC      = icc
+CXX     = icpc
+CFLAGS  = -O2 -xAVX
+CXXFLAGS= -O2 -xAVX
+
+### Build rules ################################################################
+all: configure build
+
+### Download the source tarball
+Socrates:
+	@echo "There is no release of this software.  You must pull a commit from GitHub :("
+	git clone https://github.com/jibsch/Socrates.git
+	cd Socrates; git checkout b42e78f724
+
+### Unpack the source tarball
+$(APPDIR): Socrates
+	-rm -rf $@
+	mv -T $< $@
+
+### Configure the source for build
+configure:
+	@echo "Nothing to configure.  Use 'make build' to proceed."
+
+### Build the actual software distribution
+build $(APPDIR)/bin/net: $(APPDIR)
+	export _JAVA_OPTIONS=-Xmx1g; \
+	javac -d $(APPDIR)/bin \
+		-sourcepath $(APPDIR)/src \
+		-cp $(APPDIR)/lib/sam-1.77.jar:$(APPDIR)/lib/commons-lang3-3.1.jar:$(APPDIR)/lib/picard-1.85.jar:$(APPDIR)/lib/snappy-java-1.0.3-rc3.jar:$(APPDIR)/lib/commons-cli-1.2.jar \
+		$(APPDIR)/src/net/wehi/socrates/*.java \
+		$(APPDIR)/src/net/wehi/socrates/util/*.java
+
+### Install the package into the correct location
+install: $(APPDIR)/bin/net
+	cp -rv $(APPDIR)/bin $(APP_HOME)/
+	cp -rv $(APPDIR)/lib $(APP_HOME)/
+	cp $(APPDIR)/Socrates $(APP_HOME)/
+
+### Validate the installation
+test: 
+	@echo "This application does not come with any tests."
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR)

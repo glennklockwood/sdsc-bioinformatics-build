@@ -1,0 +1,54 @@
+# The build process for bowtie2 version 2.2.2
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+APP=bowtie2
+APPDIR=bowtie2-2.2.2
+APP_HOME=$(APPS_PREFIX)/$(APPDIR)
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Build rules ################################################################
+BINARIES=$(APPDIR)/bowtie2 $(APPDIR)/bowtie2-align-s $(APPDIR)/bowtie2-align-l \
+         $(APPDIR)/bowtie2-build $(APPDIR)/bowtie2-build-s \
+         $(APPDIR)/bowtie2-build-l $(APPDIR)/bowtie2-inspect \
+         $(APPDIR)/bowtie2-inspect-s $(APPDIR)/bowtie2-inspect-l
+all: configure build
+
+### Download the source tarball
+bowtie2-2.2.2-source.zip:
+	wget http://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.2.2/bowtie2-2.2.2-source.zip
+
+### Unpack the source tarball
+$(APPDIR) $(APPDIR)/Makefile: bowtie2-2.2.2-source.zip
+	unzip bowtie2-2.2.2-source.zip
+
+### Configure the source for build
+configure: $(APPDIR)/Makefile
+	sed -i 's/^SSE_FLAG *=.*/SSE_FLAG=-mavx/' $(APPDIR)/Makefile
+
+### Build the actual software distribution
+build $(BINARIES): $(APPDIR)/Makefile
+	cd $(APPDIR) && make
+
+### Install the package into the correct location
+install: $(BINARIES)
+	mkdir -p $(APP_HOME)/bin
+	cp -v $(BINARIES) $(APP_HOME)/bin/
+
+### Validate the installation
+test: 
+	@echo "This makefile does not include any prepared tests."
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR)

@@ -1,0 +1,76 @@
+# The build process for SVDetect r0.8b in Makefile format
+.PHONY: all configure build install test clean
+SHELL=/usr/bin/env bash
+
+APP=SVDetect
+APPDIR=svdetect-r0.8b
+APP_HOME=$(APPS_PREFIX)/$(APPDIR)
+PERL_LOCAL_LIB_VERSION=2.000011
+
+### Figure out our installation prefix based on system hostname
+ifneq (,$(findstring tscc,$(HOSTNAME)))
+	APPS_PREFIX=/apps/tscc
+else ifneq (,$(findstring trestles,$(HOSTNAME)))
+	APPS_PREFIX=/apps/trestles
+else ifneq (,$(findstring gordon,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+else ifneq (,$(findstring gcn,$(HOSTNAME)))
+	APPS_PREFIX=/apps/gordon
+endif
+
+### Compiler to use for this application build
+CC      = icc
+CXX     = icpc
+FC      = ifort
+CFLAGS  = -O2 -xAVX
+CXXFLAGS= -O2 -xAVX
+FFLAGS  = -O2 -xAVX
+
+### Build rules ################################################################
+all: configure build
+
+### Download the source tarball
+SVDetect_r0.8b.tar.gz:
+	@echo "You must retrieve SVDetect from http://svdetect.sourceforge.net/Site/Download.html"
+	/bin/false
+
+### This package relies on Perl local::lib
+local-lib-$(PERL_LOCAL_LIB_VERSION).tar.gz:
+	wget "http://search.cpan.org/CPAN/authors/id/E/ET/ETHER/local-lib-$(PERL_LOCAL_LIB_VERSION).tar.gz"
+local-lib-$(PERL_LOCAL_LIB_VERSION): local-lib-$(PERL_LOCAL_LIB_VERSION).tar.gz
+	tar zxvf $<
+
+### Unpack the source tarball
+$(APPDIR): SVDetect_r0.8b.tar.gz
+	tar zxvf $<
+	mv -T SVDetect_r0.8b $(APPDIR)
+
+### Configure the source for build
+configure $(APPS_PREFIX)/$(APPDIR): local-lib-$(PERL_LOCAL_LIB_VERSION)
+	cd local-lib-$(PERL_LOCAL_LIB_VERSION) && \
+	perl Makefile.PL --bootstrap=$(APPS_PREFIX)/$(APPDIR)
+	cd local-lib-$(PERL_LOCAL_LIB_VERSION) && make && make install
+
+$(APP).buildenv.sh: $(APPS_PREFIX)/$(APPDIR)
+	perl -I$(APPS_PREFIX)/$(APPDIR)/lib/perl5 -Mlocal::lib=$(APPS_PREFIX)/$(APPDIR) > $@
+
+### Build the actual software distribution
+### Note: Test::More is required by Parallel:ForkManager per https://rt.cpan.org/Public/Bug/Display.html?id=92801
+build:
+	@echo "This application has nothing to build (use make install)"
+
+### Install the package into the correct location
+install: $(APPDIR) local-lib-$(PERL_LOCAL_LIB_VERSION) $(APP).buildenv.sh
+	rsync -avP $(APPDIR)/ $(APPS_PREFIX)/$(APPDIR)/
+	source $(APP).buildenv.sh; perl -MCPAN -e 'install Config::General'; \
+	perl -MCPAN -e 'install Tie::IxHash'; \
+	perl -MCPAN -e 'install Test::More'; \
+	perl -MCPAN -e 'install Parallel::ForkManager'
+
+### Validate the installation
+test: 
+	@echo "No validation test exists for this package"
+
+### Remove the unpacked source tarball after installation
+clean:
+	-rm -rf $(APPDIR) $(APP).buildenv.sh
